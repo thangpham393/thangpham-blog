@@ -10,13 +10,14 @@ import AIChat from './components/AIChat';
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
 import { supabase } from './supabaseClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Database, WifiOff, CheckCircle2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Trang chủ');
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<'supabase' | 'mock' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +33,7 @@ const App: React.FC = () => {
 
         if (data && data.length > 0) {
           const formattedPosts: Post[] = data.map((p: any) => ({
-            id: p.id,
+            id: String(p.id),
             title: p.title,
             content: p.content || '',
             excerpt: p.excerpt || '',
@@ -44,13 +45,17 @@ const App: React.FC = () => {
             type: p.type || 'blog'
           }));
           setPosts(formattedPosts);
+          setDataSource('supabase');
         } else {
+          console.log("Database trống, sử dụng dữ liệu mẫu.");
           setPosts(MOCK_POSTS);
+          setDataSource('mock');
         }
       } catch (err: any) {
-        console.error("Lỗi kết nối:", err.message);
+        console.error("Lỗi kết nối Supabase:", err.message);
         setError(err.message);
-        setPosts(MOCK_POSTS); 
+        setPosts(MOCK_POSTS);
+        setDataSource('mock');
       } finally {
         setIsLoading(false);
       }
@@ -74,24 +79,42 @@ const App: React.FC = () => {
         <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Left Sidebar */}
           <div className="lg:col-span-3 space-y-4 hidden lg:block">
             <SidebarLeft />
           </div>
           
-          {/* Main Feed */}
           <div className="lg:col-span-6 relative">
+            {/* Status Indicator */}
+            {!isLoading && (
+              <div className="mb-4 flex items-center justify-between px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Database className={`w-4 h-4 ${dataSource === 'supabase' ? 'text-green-500' : 'text-orange-500'}`} />
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                    Nguồn: {dataSource === 'supabase' ? 'Supabase Realtime' : 'Dữ liệu mẫu (Offline)'}
+                  </span>
+                </div>
+                {dataSource === 'supabase' ? (
+                  <div className="flex items-center gap-1 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3 h-3" /> Đã kết nối
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-[10px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">
+                    <WifiOff className="w-3 h-3" /> Chưa kết nối
+                  </div>
+                )}
+              </div>
+            )}
+
             {isLoading && posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
                 <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin mb-4" />
-                <p className="text-gray-500 font-bold animate-pulse">ĐANG KHỞI TẠO DỮ LIỆU...</p>
-                <p className="text-gray-400 text-xs mt-2 italic">Vui lòng chờ trong giây lát</p>
+                <p className="text-gray-500 font-bold animate-pulse">ĐANG ĐỒNG BỘ DỮ LIỆU...</p>
               </div>
             ) : (
               <>
-                {error && (
-                  <div className="bg-orange-50 text-orange-600 p-3 rounded-lg text-[11px] mb-4 border border-orange-100 font-medium">
-                    Lưu ý: Đang hiển thị dữ liệu mẫu do chưa kết nối được Supabase (Error: {error})
+                {error && dataSource === 'mock' && (
+                  <div className="bg-red-50 text-red-500 p-3 rounded-lg text-[11px] mb-4 border border-red-100 font-medium">
+                    Lỗi kết nối Supabase: {error}. Vui lòng kiểm tra lại ENV trên Vercel.
                   </div>
                 )}
                 <Feed posts={filteredPosts} />
@@ -99,7 +122,6 @@ const App: React.FC = () => {
             )}
           </div>
           
-          {/* Right Sidebar */}
           <div className="lg:col-span-3 space-y-4">
             <SidebarRight />
           </div>
@@ -110,15 +132,8 @@ const App: React.FC = () => {
 
       <footer className="mt-auto bg-transparent py-10 px-4 flex flex-col items-center justify-center gap-3">
         <p className="text-gray-600 text-[13px] font-medium text-center">
-          Copyright © 2024 Blog ThangPham. Design by <span className="font-bold">Thắng Phạm</span>. Server được tài trợ bởi <span className="text-blue-500 font-bold">PowerNet</span>
+          Copyright © 2024 Blog ThangPham. Design by <span className="font-bold">Thắng Phạm</span>.
         </p>
-        <div className="flex justify-center">
-          <img 
-            src="https://images.dmca.com/Badges/dmca-badge-w100-5x1-01.png?ID=939393" 
-            alt="DMCA.com Protection Status" 
-            className="h-[30px]"
-          />
-        </div>
       </footer>
     </div>
   );
