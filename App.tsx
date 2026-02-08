@@ -10,31 +10,64 @@ import AIChat from './components/AIChat';
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
 import { supabase } from './supabaseClient';
-
+import { Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Trang chủ');
   const [searchQuery, setSearchQuery] = useState('');
-  const [posts, setPosts] = useState<Post[]>(MOCK_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter posts based on search or category (simulated)
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setIsLoading(true);
+      try {
+        // Thử lấy dữ liệu từ Supabase
+        const { data, error: sbError } = await supabase
+          .from('posts')
+          .select('*')
+          .order('id', { ascending: false });
+
+        if (sbError) throw sbError;
+
+        if (data && data.length > 0) {
+          // Map dữ liệu từ snake_case (DB) sang camelCase (UI) nếu cần
+          const formattedPosts: Post[] = data.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            content: p.content || '',
+            excerpt: p.excerpt || '',
+            author: p.author || 'Thắng Phạm',
+            category: p.category || 'Chưa phân loại',
+            views: p.views || 0,
+            date: p.date || new Date().toLocaleDateString('vi-VN'),
+            imageUrl: p.image_url || 'https://picsum.photos/800/450',
+            type: p.type || 'blog'
+          }));
+          setPosts(formattedPosts);
+        } else {
+          // Nếu database trống, dùng tạm Mock Data để giữ giao diện đẹp
+          console.log("Database trống, đang hiển thị dữ liệu mẫu.");
+          setPosts(MOCK_POSTS);
+        }
+      } catch (err: any) {
+        console.error("Lỗi kết nối Supabase:", err.message);
+        setError(err.message);
+        setPosts(MOCK_POSTS); // Fallback
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  // Filter posts based on search
   const filteredPosts = posts.filter(post => 
     post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
-// ... bên trong component App
-useEffect(() => {
-  const fetchPosts = async () => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .order('date', { ascending: false });
-    
-    if (data) setPosts(data);
-  };
-  fetchPosts();
-}, []);
-
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f0f2f5]">
@@ -52,7 +85,20 @@ useEffect(() => {
           </div>
           
           {/* Main Feed */}
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-6 relative">
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl shadow-sm mb-4">
+                <Loader2 className="w-8 h-8 text-[#f39c12] animate-spin mb-2" />
+                <p className="text-gray-400 text-sm font-medium">Đang đồng bộ dữ liệu...</p>
+              </div>
+            )}
+            
+            {error && !isLoading && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-lg text-xs mb-4 border border-red-100">
+                Lưu ý: Không thể kết nối Supabase (đang dùng data mẫu). Lỗi: {error}
+              </div>
+            )}
+
             <Feed posts={filteredPosts} />
           </div>
           
