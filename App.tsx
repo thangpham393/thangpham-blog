@@ -9,8 +9,8 @@ import Feed from './components/Feed';
 import AIChat from './components/AIChat';
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
-import { supabase } from './supabaseClient';
-import { Loader2, Database, WifiOff, CheckCircle2 } from 'lucide-react';
+import { supabase, isPlaceholderConfig } from './supabaseClient';
+import { Loader2, Database, WifiOff, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Trang chủ');
@@ -19,10 +19,19 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dataSource, setDataSource] = useState<'supabase' | 'mock' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const fetchPosts = async () => {
       setIsLoading(true);
+      
+      if (isPlaceholderConfig) {
+        setPosts(MOCK_POSTS);
+        setDataSource('mock');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const { data, error: sbError } = await supabase
           .from('posts')
@@ -47,7 +56,6 @@ const App: React.FC = () => {
           setPosts(formattedPosts);
           setDataSource('supabase');
         } else {
-          console.log("Database trống, sử dụng dữ liệu mẫu.");
           setPosts(MOCK_POSTS);
           setDataSource('mock');
         }
@@ -105,20 +113,41 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {(isPlaceholderConfig || error) && (
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded-r-xl shadow-sm">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="text-amber-500 w-5 h-5 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-amber-800 font-bold text-sm">Chưa nhận được dữ liệu từ Supabase!</h4>
+                    <p className="text-amber-700 text-xs mt-1">
+                      {error ? `Lỗi: ${error}` : 'Biến môi trường SUPABASE_URL đang trống.'}
+                    </p>
+                    <button 
+                      onClick={() => setShowHelp(!showHelp)}
+                      className="text-[10px] font-bold text-amber-600 underline mt-2 uppercase tracking-tight flex items-center gap-1"
+                    >
+                      <Info className="w-3 h-3" /> {showHelp ? 'Đóng hướng dẫn' : 'Cách sửa lỗi này?'}
+                    </button>
+                    
+                    {showHelp && (
+                      <div className="mt-3 text-[11px] text-amber-800 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
+                        <p>1. Đảm bảo tên biến trên Vercel là: <code className="bg-amber-200 px-1 rounded">VITE_SUPABASE_URL</code> và <code className="bg-amber-200 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> (Thêm tiền tố <b>VITE_</b>).</p>
+                        <p>2. Kiểm tra xem URL có bắt đầu bằng <code className="bg-amber-200 px-1 rounded">https://</code> không.</p>
+                        <p>3. <b>Quan trọng:</b> Sau khi sửa trên Vercel, bạn phải nhấn <b>Redeploy</b> trong tab Deployments.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isLoading && posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
                 <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin mb-4" />
-                <p className="text-gray-500 font-bold animate-pulse">ĐANG ĐỒNG BỘ DỮ LIỆU...</p>
+                <p className="text-gray-500 font-bold animate-pulse uppercase tracking-widest text-xs">Đang kiểm tra kết nối...</p>
               </div>
             ) : (
-              <>
-                {error && dataSource === 'mock' && (
-                  <div className="bg-red-50 text-red-500 p-3 rounded-lg text-[11px] mb-4 border border-red-100 font-medium">
-                    Lỗi kết nối Supabase: {error}. Vui lòng kiểm tra lại ENV trên Vercel.
-                  </div>
-                )}
-                <Feed posts={filteredPosts} />
-              </>
+              <Feed posts={filteredPosts} />
             )}
           </div>
           
@@ -132,7 +161,7 @@ const App: React.FC = () => {
 
       <footer className="mt-auto bg-transparent py-10 px-4 flex flex-col items-center justify-center gap-3">
         <p className="text-gray-600 text-[13px] font-medium text-center">
-          Copyright © 2024 Blog ThangPham. Design by <span className="font-bold">Thắng Phạm</span>.
+          Copyright © 2024 Blog ThangPham.
         </p>
       </footer>
     </div>
