@@ -5,10 +5,10 @@ import { Post } from '../types';
 
 interface FeedProps {
   posts: Post[];
+  onPostClick: (post: Post) => void;
 }
 
-const Feed: React.FC<FeedProps> = ({ posts }) => {
-  // Nếu không có bài viết nào, hiển thị trạng thái trống thay vì crash
+const Feed: React.FC<FeedProps> = ({ posts, onPostClick }) => {
   if (!posts || posts.length === 0) {
     return (
       <div className="bg-white rounded-xl p-8 text-center border border-gray-100 shadow-sm">
@@ -18,7 +18,7 @@ const Feed: React.FC<FeedProps> = ({ posts }) => {
   }
 
   const featuredPost = posts[0];
-  const listPosts = posts.slice(1, 4);
+  const listPosts = posts.slice(1, 10); // Lấy thêm nhiều bài hơn
   const sharePosts = posts.filter(p => p.type === 'share-code');
 
   return (
@@ -30,7 +30,7 @@ const Feed: React.FC<FeedProps> = ({ posts }) => {
             <img src={`https://picsum.photos/seed/st${i}/300/600`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="story" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
             <p className="absolute bottom-3 left-2 right-2 text-white text-[11px] font-bold leading-tight line-clamp-2">
-              Hướng dẫn xây dựng chức năng cho website
+              Chia sẻ kiến thức thiết kế web
             </p>
           </div>
         ))}
@@ -55,9 +55,12 @@ const Feed: React.FC<FeedProps> = ({ posts }) => {
 
       {/* Featured Post Card */}
       {featuredPost && (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 group">
           <div className="p-5">
-            <h2 className="text-[18px] font-black text-gray-800 leading-tight hover:text-[#f39c12] cursor-pointer mb-3">
+            <h2 
+              onClick={() => onPostClick(featuredPost)}
+              className="text-[18px] font-black text-gray-800 leading-tight hover:text-[#f39c12] cursor-pointer mb-3 transition-colors"
+            >
               {featuredPost.title}
             </h2>
             <div className="flex items-center gap-4 text-[11px] font-bold text-gray-400">
@@ -66,10 +69,12 @@ const Feed: React.FC<FeedProps> = ({ posts }) => {
               <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5 text-[#f39c12]" /> {featuredPost.views} lượt xem</span>
             </div>
           </div>
-          <div className="px-5 pb-4">
-            <img src={featuredPost.imageUrl} className="w-full rounded-xl object-cover aspect-video hover:opacity-95 transition-opacity cursor-pointer shadow-sm border border-gray-50" alt={featuredPost.title} />
+          <div className="px-5 pb-4" onClick={() => onPostClick(featuredPost)}>
+            <div className="overflow-hidden rounded-xl border border-gray-50 shadow-sm cursor-pointer">
+              <img src={featuredPost.imageUrl} className="w-full object-cover aspect-video group-hover:scale-105 transition-transform duration-700" alt={featuredPost.title} />
+            </div>
             <p className="mt-4 text-[13px] text-gray-500 leading-relaxed line-clamp-3">
-              {featuredPost.excerpt || 'Bạn đã bao giờ muốn xây dựng một website hoàn chỉnh với những tính năng chuyên nghiệp mà không mất quá nhiều thời gian? Hãy khám phá bí quyết ngay sau đây...'}
+              {featuredPost.excerpt || 'Nhấn để xem nội dung chi tiết bài viết này...'}
             </p>
           </div>
           <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-100">
@@ -91,7 +96,11 @@ const Feed: React.FC<FeedProps> = ({ posts }) => {
       {/* List Posts */}
       <div className="space-y-4">
         {listPosts.map(post => (
-          <div key={post.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4 cursor-pointer hover:bg-gray-50 transition-colors group">
+          <div 
+            key={post.id} 
+            onClick={() => onPostClick(post)}
+            className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4 cursor-pointer hover:bg-gray-50 transition-colors group"
+          >
             <div className="w-[120px] h-[80px] rounded-lg overflow-hidden flex-shrink-0 shadow-sm border border-gray-100">
               <img src={post.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={post.title} />
             </div>
@@ -106,27 +115,6 @@ const Feed: React.FC<FeedProps> = ({ posts }) => {
           </div>
         ))}
       </div>
-
-      {/* Share Code Section */}
-      {sharePosts.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
-          <h3 className="text-[14px] font-black text-gray-400 uppercase tracking-widest mb-6 pb-2 border-b border-gray-50">SHARE CODE</h3>
-          <div className="grid grid-cols-2 gap-x-5 gap-y-8">
-            {sharePosts.map(post => (
-              <div key={post.id} className="group cursor-pointer">
-                <div className="relative rounded-xl overflow-hidden aspect-video shadow-md mb-3 border border-gray-100">
-                  <img src={post.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={post.title} />
-                </div>
-                <h4 className="font-black text-[13px] text-gray-800 leading-tight group-hover:text-[#f39c12] line-clamp-2 mb-2">{post.title}</h4>
-                <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
-                  <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-[#f39c12]" /> {post.date}</span>
-                  <span className="flex items-center gap-1.5"><Eye className="w-3.5 h-3.5 text-[#f39c12]" /> {post.views}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
