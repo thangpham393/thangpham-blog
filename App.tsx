@@ -9,8 +9,8 @@ import Feed from './components/Feed';
 import AIChat from './components/AIChat';
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
-import { supabase, isPlaceholderConfig } from './supabaseClient';
-import { Loader2, Database, WifiOff, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { supabase, isSupabaseConfigured, saveManualConfig, clearManualConfig } from './supabaseClient';
+import { Loader2, Database, WifiOff, CheckCircle2, AlertTriangle, Settings, Save, Trash2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Trang chủ');
@@ -19,13 +19,19 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [dataSource, setDataSource] = useState<'supabase' | 'mock' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showHelp, setShowHelp] = useState(false);
+  
+  // State cho việc cấu hình thủ công
+  const [showSetup, setShowSetup] = useState(false);
+  const [manualUrl, setManualUrl] = useState('');
+  const [manualKey, setManualKey] = useState('');
+
+  const isConfigValid = isSupabaseConfigured();
 
   useEffect(() => {
     const fetchPosts = async () => {
       setIsLoading(true);
       
-      if (isPlaceholderConfig) {
+      if (!isConfigValid) {
         setPosts(MOCK_POSTS);
         setDataSource('mock');
         setIsLoading(false);
@@ -70,7 +76,13 @@ const App: React.FC = () => {
     };
 
     fetchPosts();
-  }, []);
+  }, [isConfigValid]);
+
+  const handleSaveSetup = () => {
+    if (manualUrl && manualKey) {
+      saveManualConfig(manualUrl, manualKey);
+    }
+  };
 
   const filteredPosts = posts.filter(post => 
     post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,51 +104,75 @@ const App: React.FC = () => {
           </div>
           
           <div className="lg:col-span-6 relative">
-            {/* Status Indicator */}
-            {!isLoading && (
-              <div className="mb-4 flex items-center justify-between px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Database className={`w-4 h-4 ${dataSource === 'supabase' ? 'text-green-500' : 'text-orange-500'}`} />
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    Nguồn: {dataSource === 'supabase' ? 'Supabase Realtime' : 'Dữ liệu mẫu (Offline)'}
-                  </span>
-                </div>
-                {dataSource === 'supabase' ? (
-                  <div className="flex items-center gap-1 text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3 h-3" /> Đã kết nối
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-[10px] text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full">
-                    <WifiOff className="w-3 h-3" /> Chưa kết nối
-                  </div>
-                )}
+            {/* Status & Settings Bar */}
+            <div className="mb-4 flex items-center justify-between px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2">
+                <Database className={`w-4 h-4 ${dataSource === 'supabase' ? 'text-green-500' : 'text-orange-400'}`} />
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  {dataSource === 'supabase' ? 'DATABASE: SUPABASE' : 'DATABASE: OFFLINE MOCK'}
+                </span>
               </div>
-            )}
+              <button 
+                onClick={() => setShowSetup(!showSetup)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                  !isConfigValid ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                <Settings className="w-3 h-3" />
+                {isConfigValid ? 'CẤU HÌNH' : 'SỬA LỖI KẾT NỐI'}
+              </button>
+            </div>
 
-            {(isPlaceholderConfig || error) && (
-              <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded-r-xl shadow-sm">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="text-amber-500 w-5 h-5 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="text-amber-800 font-bold text-sm">Chưa nhận được dữ liệu từ Supabase!</h4>
-                    <p className="text-amber-700 text-xs mt-1">
-                      {error ? `Lỗi: ${error}` : 'Biến môi trường SUPABASE_URL đang trống.'}
-                    </p>
-                    <button 
-                      onClick={() => setShowHelp(!showHelp)}
-                      className="text-[10px] font-bold text-amber-600 underline mt-2 uppercase tracking-tight flex items-center gap-1"
-                    >
-                      <Info className="w-3 h-3" /> {showHelp ? 'Đóng hướng dẫn' : 'Cách sửa lỗi này?'}
-                    </button>
-                    
-                    {showHelp && (
-                      <div className="mt-3 text-[11px] text-amber-800 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
-                        <p>1. Đảm bảo tên biến trên Vercel là: <code className="bg-amber-200 px-1 rounded">VITE_SUPABASE_URL</code> và <code className="bg-amber-200 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> (Thêm tiền tố <b>VITE_</b>).</p>
-                        <p>2. Kiểm tra xem URL có bắt đầu bằng <code className="bg-amber-200 px-1 rounded">https://</code> không.</p>
-                        <p>3. <b>Quan trọng:</b> Sau khi sửa trên Vercel, bạn phải nhấn <b>Redeploy</b> trong tab Deployments.</p>
-                      </div>
-                    )}
+            {/* Manual Setup Form */}
+            {showSetup && (
+              <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-5 mb-6 animate-in slide-in-from-top duration-300">
+                <div className="flex items-center gap-2 mb-4 text-amber-600">
+                  <AlertTriangle className="w-5 h-5" />
+                  <h3 className="font-black text-sm uppercase">Cài đặt kết nối Supabase</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1 uppercase">Supabase URL</label>
+                    <input 
+                      type="text" 
+                      value={manualUrl}
+                      onChange={(e) => setManualUrl(e.target.value)}
+                      placeholder="https://xyz.supabase.co"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                    />
                   </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1 uppercase">Anon Key</label>
+                    <input 
+                      type="password" 
+                      value={manualKey}
+                      onChange={(e) => setManualKey(e.target.value)}
+                      placeholder="Dán key dài của bạn vào đây..."
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      onClick={handleSaveSetup}
+                      className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Save className="w-4 h-4" /> LƯU & KẾT NỐI LẠI
+                    </button>
+                    <button 
+                      onClick={clearManualConfig}
+                      className="px-4 py-2 bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-lg transition-colors"
+                      title="Xóa cấu hình thủ công"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <p className="text-[10px] text-gray-400 leading-relaxed">
+                    * Nếu biến môi trường trên Vercel không hoạt động, hãy dán trực tiếp thông tin vào đây. 
+                    Thông tin sẽ được lưu an toàn trong trình duyệt của bạn (LocalStorage).
+                  </p>
                 </div>
               </div>
             )}
@@ -144,7 +180,7 @@ const App: React.FC = () => {
             {isLoading && posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
                 <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin mb-4" />
-                <p className="text-gray-500 font-bold animate-pulse uppercase tracking-widest text-xs">Đang kiểm tra kết nối...</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Đang khởi tạo dữ liệu...</p>
               </div>
             ) : (
               <Feed posts={filteredPosts} />
