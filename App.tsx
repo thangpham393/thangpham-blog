@@ -23,7 +23,6 @@ const App: React.FC = () => {
     const fetchPosts = async () => {
       setIsLoading(true);
       try {
-        // Thử lấy dữ liệu từ Supabase
         const { data, error: sbError } = await supabase
           .from('posts')
           .select('*')
@@ -32,7 +31,6 @@ const App: React.FC = () => {
         if (sbError) throw sbError;
 
         if (data && data.length > 0) {
-          // Map dữ liệu từ snake_case (DB) sang camelCase (UI) nếu cần
           const formattedPosts: Post[] = data.map((p: any) => ({
             id: p.id,
             title: p.title,
@@ -47,14 +45,12 @@ const App: React.FC = () => {
           }));
           setPosts(formattedPosts);
         } else {
-          // Nếu database trống, dùng tạm Mock Data để giữ giao diện đẹp
-          console.log("Database trống, đang hiển thị dữ liệu mẫu.");
           setPosts(MOCK_POSTS);
         }
       } catch (err: any) {
-        console.error("Lỗi kết nối Supabase:", err.message);
+        console.error("Lỗi kết nối:", err.message);
         setError(err.message);
-        setPosts(MOCK_POSTS); // Fallback
+        setPosts(MOCK_POSTS); 
       } finally {
         setIsLoading(false);
       }
@@ -63,7 +59,6 @@ const App: React.FC = () => {
     fetchPosts();
   }, []);
 
-  // Filter posts based on search
   const filteredPosts = posts.filter(post => 
     post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -86,20 +81,22 @@ const App: React.FC = () => {
           
           {/* Main Feed */}
           <div className="lg:col-span-6 relative">
-            {isLoading && (
-              <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl shadow-sm mb-4">
-                <Loader2 className="w-8 h-8 text-[#f39c12] animate-spin mb-2" />
-                <p className="text-gray-400 text-sm font-medium">Đang đồng bộ dữ liệu...</p>
+            {isLoading && posts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
+                <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin mb-4" />
+                <p className="text-gray-500 font-bold animate-pulse">ĐANG KHỞI TẠO DỮ LIỆU...</p>
+                <p className="text-gray-400 text-xs mt-2 italic">Vui lòng chờ trong giây lát</p>
               </div>
+            ) : (
+              <>
+                {error && (
+                  <div className="bg-orange-50 text-orange-600 p-3 rounded-lg text-[11px] mb-4 border border-orange-100 font-medium">
+                    Lưu ý: Đang hiển thị dữ liệu mẫu do chưa kết nối được Supabase (Error: {error})
+                  </div>
+                )}
+                <Feed posts={filteredPosts} />
+              </>
             )}
-            
-            {error && !isLoading && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-lg text-xs mb-4 border border-red-100">
-                Lưu ý: Không thể kết nối Supabase (đang dùng data mẫu). Lỗi: {error}
-              </div>
-            )}
-
-            <Feed posts={filteredPosts} />
           </div>
           
           {/* Right Sidebar */}
@@ -109,7 +106,6 @@ const App: React.FC = () => {
         </div>
       </main>
       
-      {/* Floating AI Assistant */}
       <AIChat />
 
       <footer className="mt-auto bg-transparent py-10 px-4 flex flex-col items-center justify-center gap-3">
