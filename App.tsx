@@ -93,18 +93,26 @@ const App: React.FC = () => {
       <Header onSearch={setSearchQuery} />
       
       <main className="flex-grow max-w-[1200px] w-full mx-auto pb-8 px-2 md:px-4">
-        <HeroSection />
+        {/* Chỉ hiện HeroSection và Navbar khi không xem chi tiết bài viết */}
+        {!selectedPost && (
+          <>
+            <HeroSection />
+            <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
+          </>
+        )}
         
-        <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Sidebar Trái */}
-          <div className="lg:col-span-3 space-y-4 hidden lg:block">
-            <SidebarLeft />
-          </div>
+        {/* Layout Grid động: Nếu có selectedPost thì chiếm 12 cột, ngược lại chia 3-6-3 */}
+        <div className={`grid grid-cols-1 ${selectedPost ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-5 ${selectedPost ? 'mt-6' : ''}`}>
           
-          <div className="lg:col-span-6 relative">
-            {/* Nội dung chính: Chi tiết, Admin, hoặc Feed */}
+          {/* Sidebar Trái - Ẩn khi xem chi tiết */}
+          {!selectedPost && (
+            <div className="lg:col-span-3 space-y-4 hidden lg:block">
+              <SidebarLeft />
+            </div>
+          )}
+          
+          {/* Cột Nội dung chính */}
+          <div className={`${selectedPost ? 'lg:col-span-1 max-w-[900px] mx-auto w-full' : 'lg:col-span-6'} relative`}>
             {selectedPost ? (
               <PostDetail post={selectedPost} onBack={() => setSelectedPost(null)} />
             ) : activeTab === 'Quản lý' ? (
@@ -119,9 +127,12 @@ const App: React.FC = () => {
             )}
           </div>
           
-          <div className="lg:col-span-3 space-y-4">
-            <SidebarRight />
-          </div>
+          {/* Sidebar Phải - Ẩn khi xem chi tiết */}
+          {!selectedPost && (
+            <div className="lg:col-span-3 space-y-4">
+              <SidebarRight />
+            </div>
+          )}
         </div>
       </main>
       
