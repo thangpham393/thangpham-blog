@@ -75,7 +75,7 @@ const App: React.FC = () => {
 
   const handlePostClick = (post: Post) => {
     setSelectedPost(post);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 300, behavior: 'smooth' }); // Cuộn xuống một chút để thấy nội dung rõ hơn
   };
 
   const handleTabChange = (tab: string) => {
@@ -93,16 +93,14 @@ const App: React.FC = () => {
       <Header onSearch={setSearchQuery} />
       
       <main className="flex-grow max-w-[1200px] w-full mx-auto pb-8 px-2 md:px-4">
-        {/* Chỉ hiện HeroSection và Navbar khi không xem chi tiết bài viết */}
-        {!selectedPost && (
-          <>
-            <HeroSection />
-            <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
-          </>
-        )}
+        {/* HeroSection luôn hiện khi ở Tab Trang chủ, kể cả khi xem chi tiết bài viết */}
+        {activeTab === 'Trang chủ' && <HeroSection />}
         
-        {/* Layout Grid động: Nếu có selectedPost thì chiếm 12 cột, ngược lại chia 3-6-3 */}
-        <div className={`grid grid-cols-1 ${selectedPost ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-5 ${selectedPost ? 'mt-6' : ''}`}>
+        {/* Navbar luôn luôn hiển thị */}
+        <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
+        
+        {/* Layout Grid động: Nếu có selectedPost thì chiếm 12 cột (để ẩn sidebar), ngược lại chia 3-6-3 */}
+        <div className={`grid grid-cols-1 ${selectedPost ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-5 mt-2`}>
           
           {/* Sidebar Trái - Ẩn khi xem chi tiết */}
           {!selectedPost && (
@@ -111,7 +109,7 @@ const App: React.FC = () => {
             </div>
           )}
           
-          {/* Cột Nội dung chính */}
+          {/* Cột Nội dung chính - Nếu xem chi tiết thì căn giữa và giới hạn độ rộng */}
           <div className={`${selectedPost ? 'lg:col-span-1 max-w-[900px] mx-auto w-full' : 'lg:col-span-6'} relative`}>
             {selectedPost ? (
               <PostDetail post={selectedPost} onBack={() => setSelectedPost(null)} />
