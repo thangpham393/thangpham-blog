@@ -1,6 +1,6 @@
 
+import { Home, User, Laptop, Video, Image, HelpCircle, Phone, LayoutDashboard } from 'lucide-react';
 import React from 'react';
-import { Home, User, Laptop, Video, Image, HelpCircle, Phone } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -10,6 +10,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const tabs = [
     { name: 'Trang chủ', icon: Home },
+    { name: 'Quản lý', icon: LayoutDashboard }, // Tab mới cho Backend
     { name: 'Giới thiệu', icon: User },
     { name: 'WordPress', icon: Laptop },
     { name: 'Video', icon: Video },

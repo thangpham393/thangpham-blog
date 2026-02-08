@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import Navbar from './components/Navbar';
@@ -7,6 +7,7 @@ import SidebarLeft from './components/SidebarLeft';
 import SidebarRight from './components/SidebarRight';
 import Feed from './components/Feed';
 import AIChat from './components/AIChat';
+import AdminEditor from './components/AdminEditor'; // Import mới
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
 import { supabase, isSupabaseConfigured, saveManualConfig, clearManualConfig } from './supabaseClient';
@@ -20,63 +21,62 @@ const App: React.FC = () => {
   const [dataSource, setDataSource] = useState<'supabase' | 'mock' | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // State cho việc cấu hình thủ công
   const [showSetup, setShowSetup] = useState(false);
   const [manualUrl, setManualUrl] = useState('');
   const [manualKey, setManualKey] = useState('');
 
   const isConfigValid = isSupabaseConfigured();
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      setIsLoading(true);
-      
-      if (!isConfigValid) {
+  const fetchPosts = useCallback(async () => {
+    setIsLoading(true);
+    
+    if (!isConfigValid) {
+      setPosts(MOCK_POSTS);
+      setDataSource('mock');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error: sbError } = await supabase
+        .from('posts')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (sbError) throw sbError;
+
+      if (data && data.length > 0) {
+        const formattedPosts: Post[] = data.map((p: any) => ({
+          id: String(p.id),
+          title: p.title,
+          content: p.content || '',
+          excerpt: p.excerpt || '',
+          author: p.author || 'Thắng Phạm',
+          category: p.category || 'Chưa phân loại',
+          views: p.views || 0,
+          date: p.date || new Date().toLocaleDateString('vi-VN'),
+          imageUrl: p.image_url || 'https://picsum.photos/800/450',
+          type: p.type || 'blog'
+        }));
+        setPosts(formattedPosts);
+        setDataSource('supabase');
+      } else {
         setPosts(MOCK_POSTS);
         setDataSource('mock');
-        setIsLoading(false);
-        return;
       }
-
-      try {
-        const { data, error: sbError } = await supabase
-          .from('posts')
-          .select('*')
-          .order('id', { ascending: false });
-
-        if (sbError) throw sbError;
-
-        if (data && data.length > 0) {
-          const formattedPosts: Post[] = data.map((p: any) => ({
-            id: String(p.id),
-            title: p.title,
-            content: p.content || '',
-            excerpt: p.excerpt || '',
-            author: p.author || 'Thắng Phạm',
-            category: p.category || 'Chưa phân loại',
-            views: p.views || 0,
-            date: p.date || new Date().toLocaleDateString('vi-VN'),
-            imageUrl: p.image_url || 'https://picsum.photos/800/450',
-            type: p.type || 'blog'
-          }));
-          setPosts(formattedPosts);
-          setDataSource('supabase');
-        } else {
-          setPosts(MOCK_POSTS);
-          setDataSource('mock');
-        }
-      } catch (err: any) {
-        console.error("Lỗi kết nối Supabase:", err.message);
-        setError(err.message);
-        setPosts(MOCK_POSTS);
-        setDataSource('mock');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPosts();
+    } catch (err: any) {
+      console.error("Lỗi kết nối Supabase:", err.message);
+      setError(err.message);
+      setPosts(MOCK_POSTS);
+      setDataSource('mock');
+    } finally {
+      setIsLoading(false);
+    }
   }, [isConfigValid]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handleSaveSetup = () => {
     if (manualUrl && manualKey) {
@@ -89,6 +89,11 @@ const App: React.FC = () => {
     post.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handlePostSuccess = () => {
+    fetchPosts();
+    setActiveTab('Trang chủ'); // Quay lại trang chủ sau khi đăng bài thành công
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f0f2f5]">
       <Header onSearch={setSearchQuery} />
@@ -99,12 +104,13 @@ const App: React.FC = () => {
         <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Sidebar Trái - Luôn hiện ở các tab trừ Quản lý trên mobile nếu cần */}
           <div className="lg:col-span-3 space-y-4 hidden lg:block">
             <SidebarLeft />
           </div>
           
           <div className="lg:col-span-6 relative">
-            {/* Status & Settings Bar */}
+            {/* Thanh trạng thái kết nối */}
             <div className="mb-4 flex items-center justify-between px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100">
               <div className="flex items-center gap-2">
                 <Database className={`w-4 h-4 ${dataSource === 'supabase' ? 'text-green-500' : 'text-orange-400'}`} />
@@ -123,7 +129,7 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Manual Setup Form */}
+            {/* Cấu hình thủ công */}
             {showSetup && (
               <div className="bg-white rounded-xl shadow-lg border-2 border-amber-200 p-5 mb-6 animate-in slide-in-from-top duration-300">
                 <div className="flex items-center gap-2 mb-4 text-amber-600">
@@ -163,27 +169,26 @@ const App: React.FC = () => {
                     <button 
                       onClick={clearManualConfig}
                       className="px-4 py-2 bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-lg transition-colors"
-                      title="Xóa cấu hình thủ công"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  
-                  <p className="text-[10px] text-gray-400 leading-relaxed">
-                    * Nếu biến môi trường trên Vercel không hoạt động, hãy dán trực tiếp thông tin vào đây. 
-                    Thông tin sẽ được lưu an toàn trong trình duyệt của bạn (LocalStorage).
-                  </p>
                 </div>
               </div>
             )}
 
-            {isLoading && posts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
-                <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin mb-4" />
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Đang khởi tạo dữ liệu...</p>
-              </div>
+            {/* Hiển thị nội dung dựa trên Tab */}
+            {activeTab === 'Quản lý' ? (
+              <AdminEditor onSuccess={handlePostSuccess} />
             ) : (
-              <Feed posts={filteredPosts} />
+              isLoading && posts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
+                  <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin mb-4" />
+                  <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Đang khởi tạo dữ liệu...</p>
+                </div>
+              ) : (
+                <Feed posts={filteredPosts} />
+              )
             )}
           </div>
           
