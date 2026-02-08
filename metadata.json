@@ -1,0 +1,9 @@
+
+{
+  "name": "Thắng Phạm Blog Clone",
+  "description": "A high-performance personal blog inspired by the Thắng Phạm website, built with React, Tailwind CSS, Supabase, and Gemini AI integration.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
