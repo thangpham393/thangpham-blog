@@ -13,7 +13,7 @@ import Auth from './components/Auth';
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, ArrowLeft } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Trang chủ');
@@ -85,10 +85,16 @@ const App: React.FC = () => {
     fetchPosts();
   }, [fetchPosts]);
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPosts = posts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         post.category.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Lọc theo Category dựa trên Tab đang chọn (trừ Trang chủ và Quản lý)
+    if (activeTab === 'WordPress') return matchesSearch && post.category === 'WordPress';
+    if (activeTab === 'Video') return matchesSearch && post.type === 'video';
+    
+    return matchesSearch;
+  });
 
   const handlePostClick = (post: Post) => {
     setSelectedPost(post);
@@ -98,11 +104,6 @@ const App: React.FC = () => {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setSelectedPost(null);
-  };
-
-  const handlePostSuccess = () => {
-    fetchPosts();
-    handleTabChange('Trang chủ');
   };
 
   return (
@@ -115,7 +116,8 @@ const App: React.FC = () => {
       />
       
       <main className="flex-grow max-w-[1200px] w-full mx-auto pb-8 px-2 md:px-4">
-        {activeTab === 'Trang chủ' && <HeroSection />}
+        {/* HIỂN THỊ HERO SECTION TRÊN TẤT CẢ CÁC TAB (TRỪ QUẢN LÝ VÀ CHI TIẾT BÀI VIẾT) */}
+        {!selectedPost && activeTab !== 'Quản lý' && <HeroSection />}
         
         <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
         
@@ -133,17 +135,22 @@ const App: React.FC = () => {
             ) : activeTab === 'Quản lý' ? (
               user ? (
                 isAdmin ? (
-                  <AdminEditor onSuccess={handlePostSuccess} />
+                  <AdminEditor onSuccess={() => { fetchPosts(); handleTabChange('Trang chủ'); }} />
                 ) : (
-                  <div className="bg-white rounded-xl p-20 text-center border border-gray-100 flex flex-col items-center">
-                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                  <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 flex flex-col items-center shadow-sm">
+                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6">
                       <ShieldAlert className="w-8 h-8" />
                     </div>
-                    <h2 className="text-xl font-black text-gray-800 uppercase mb-2">Truy cập bị từ chối</h2>
-                    <p className="text-gray-400 font-medium text-sm max-w-sm">
-                      Tài khoản của bạn không có quyền quản trị. Vui lòng liên hệ Admin để được cấp quyền.
+                    <h2 className="text-xl font-black text-gray-800 uppercase mb-3">Truy cập bị hạn chế</h2>
+                    <p className="text-gray-400 font-medium text-sm max-w-sm mb-8 leading-relaxed">
+                      Xin lỗi <span className="text-gray-700 font-bold">{user.email}</span>, tài khoản của bạn chưa có quyền quản trị để thực hiện thao tác này.
                     </p>
-                    <button onClick={() => handleTabChange('Trang chủ')} className="mt-6 bg-gray-100 text-gray-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-200">Quay lại trang chủ</button>
+                    <button 
+                      onClick={() => handleTabChange('Trang chủ')} 
+                      className="flex items-center gap-2 bg-gray-100 text-gray-600 px-6 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-200 transition-all"
+                    >
+                      <ArrowLeft className="w-4 h-4" /> Quay lại trang chủ
+                    </button>
                   </div>
                 )
               ) : (
