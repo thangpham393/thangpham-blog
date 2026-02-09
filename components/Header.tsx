@@ -1,12 +1,18 @@
 
 import React from 'react';
-import { Search, Grid, Users, Home, Bell, ChevronDown } from 'lucide-react';
+import { Search, Grid, Users, Home, Bell, ChevronDown, LogOut } from 'lucide-react';
+import { supabase } from '../supabaseClient';
 
 interface HeaderProps {
   onSearch: (q: string) => void;
+  user?: any;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSearch }) => {
+const Header: React.FC<HeaderProps> = ({ onSearch, user }) => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
       <div className="max-w-[1200px] mx-auto h-[56px] flex items-center justify-between px-4">
@@ -47,12 +53,31 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-500 border-2 border-white rounded-full"></span>
             </div>
           </div>
-          <div className="flex items-center gap-1 border border-gray-100 rounded-full p-0.5 pr-2 hover:bg-gray-50 cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shadow-inner">
-               <img src="https://i.pravatar.cc/150?u=thangpham" alt="User" />
+          
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 border border-gray-100 rounded-full p-0.5 pr-2 hover:bg-gray-50 cursor-pointer group relative">
+                <div className="w-8 h-8 rounded-full bg-[#f39c12] flex items-center justify-center text-white font-bold overflow-hidden shadow-inner">
+                   {user.email?.[0].toUpperCase()}
+                </div>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+                
+                {/* Dropdown Logout */}
+                <div className="absolute top-full right-0 mt-2 w-40 bg-white shadow-xl rounded-lg border border-gray-100 hidden group-hover:block overflow-hidden">
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <LogOut className="w-3.5 h-3.5" /> Đăng xuất
+                  </button>
+                </div>
+              </div>
             </div>
-            <ChevronDown className="w-4 h-4 text-gray-400" />
-          </div>
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shadow-inner">
+               <img src="https://i.pravatar.cc/150?u=thangpham" alt="Guest" />
+            </div>
+          )}
         </div>
       </div>
     </header>

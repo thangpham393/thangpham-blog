@@ -9,6 +9,7 @@ import Feed from './components/Feed';
 import AIChat from './components/AIChat';
 import AdminEditor from './components/AdminEditor';
 import PostDetail from './components/PostDetail';
+import Auth from './components/Auth';
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
@@ -20,8 +21,22 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [user, setUser] = useState<any>(null);
   
   const isConfigValid = isSupabaseConfigured();
+
+  // Theo dõi trạng thái đăng nhập
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
@@ -75,12 +90,12 @@ const App: React.FC = () => {
 
   const handlePostClick = (post: Post) => {
     setSelectedPost(post);
-    window.scrollTo({ top: 300, behavior: 'smooth' }); // Cuộn xuống một chút để thấy nội dung rõ hơn
+    window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setSelectedPost(null); // Reset bài viết đang xem khi chuyển tab
+    setSelectedPost(null);
   };
 
   const handlePostSuccess = () => {
@@ -90,31 +105,30 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f0f2f5]">
-      <Header onSearch={setSearchQuery} />
+      <Header onSearch={setSearchQuery} user={user} />
       
       <main className="flex-grow max-w-[1200px] w-full mx-auto pb-8 px-2 md:px-4">
-        {/* HeroSection luôn hiện khi ở Tab Trang chủ, kể cả khi xem chi tiết bài viết */}
         {activeTab === 'Trang chủ' && <HeroSection />}
         
-        {/* Navbar luôn luôn hiển thị */}
-        <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
+        <Navbar activeTab={activeTab} setActiveTab={handleTabChange} isAdmin={!!user} />
         
-        {/* Layout Grid động: Nếu có selectedPost thì chiếm 12 cột (để ẩn sidebar), ngược lại chia 3-6-3 */}
         <div className={`grid grid-cols-1 ${selectedPost ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-5 mt-2`}>
           
-          {/* Sidebar Trái - Ẩn khi xem chi tiết */}
           {!selectedPost && (
             <div className="lg:col-span-3 space-y-4 hidden lg:block">
               <SidebarLeft />
             </div>
           )}
           
-          {/* Cột Nội dung chính - Nếu xem chi tiết thì căn giữa và giới hạn độ rộng */}
           <div className={`${selectedPost ? 'lg:col-span-1 max-w-[900px] mx-auto w-full' : 'lg:col-span-6'} relative`}>
             {selectedPost ? (
               <PostDetail post={selectedPost} onBack={() => setSelectedPost(null)} />
             ) : activeTab === 'Quản lý' ? (
-              <AdminEditor onSuccess={handlePostSuccess} />
+              user ? (
+                <AdminEditor onSuccess={handlePostSuccess} />
+              ) : (
+                <Auth />
+              )
             ) : isLoading && posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
                 <Loader2 className="w-10 h-10 text-[#f39c12] animate-spin mb-4" />
@@ -125,7 +139,6 @@ const App: React.FC = () => {
             )}
           </div>
           
-          {/* Sidebar Phải - Ẩn khi xem chi tiết */}
           {!selectedPost && (
             <div className="lg:col-span-3 space-y-4">
               <SidebarRight />
