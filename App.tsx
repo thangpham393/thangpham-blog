@@ -22,10 +22,10 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
   const isConfigValid = isSupabaseConfigured();
 
-  // Theo dõi trạng thái đăng nhập
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -33,6 +33,7 @@ const App: React.FC = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) setShowAuthModal(false); // Đóng modal khi login thành công
     });
 
     return () => subscription.unsubscribe();
@@ -105,12 +106,17 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f0f2f5]">
-      <Header onSearch={setSearchQuery} user={user} />
+      <Header 
+        onSearch={setSearchQuery} 
+        user={user} 
+        onLoginClick={() => setShowAuthModal(true)}
+        onAdminClick={() => handleTabChange('Quản lý')}
+      />
       
       <main className="flex-grow max-w-[1200px] w-full mx-auto pb-8 px-2 md:px-4">
         {activeTab === 'Trang chủ' && <HeroSection />}
         
-        <Navbar activeTab={activeTab} setActiveTab={handleTabChange} isAdmin={!!user} />
+        <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
         
         <div className={`grid grid-cols-1 ${selectedPost ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-5 mt-2`}>
           
@@ -127,7 +133,10 @@ const App: React.FC = () => {
               user ? (
                 <AdminEditor onSuccess={handlePostSuccess} />
               ) : (
-                <Auth />
+                <div className="bg-white rounded-xl p-20 text-center border border-gray-100">
+                   <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Vui lòng đăng nhập để truy cập trang này</p>
+                   <button onClick={() => setShowAuthModal(true)} className="mt-4 bg-[#f39c12] text-white px-6 py-2 rounded-lg font-bold">Đăng nhập ngay</button>
+                </div>
               )
             ) : isLoading && posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm mb-4 border border-gray-100">
@@ -146,6 +155,8 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
+      
+      {showAuthModal && <Auth onClose={() => setShowAuthModal(false)} />}
       
       <AIChat />
 
