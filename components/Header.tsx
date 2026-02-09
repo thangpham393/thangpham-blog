@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, Grid, Users, Home, Bell, ChevronDown, LogOut, LayoutDashboard, User, LogIn, Settings } from 'lucide-react';
+import { Search, Grid, Users, Home, Bell, ChevronDown, LogOut, LayoutDashboard, User, LogIn, Settings, ShieldCheck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface HeaderProps {
@@ -14,6 +14,8 @@ const Header: React.FC<HeaderProps> = ({ onSearch, user, onLoginClick, onAdminCl
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
@@ -59,28 +61,37 @@ const Header: React.FC<HeaderProps> = ({ onSearch, user, onLoginClick, onAdminCl
           <div className="h-8 w-px bg-gray-100 mx-2 hidden sm:block"></div>
 
           {user ? (
-            <div className="relative group py-2"> {/* Thêm padding y để mở rộng vùng hover */}
+            <div className="relative group py-2">
               <button className="flex items-center gap-1 border border-gray-100 rounded-full p-0.5 pr-2 hover:bg-gray-50 transition-all">
-                <div className="w-8 h-8 rounded-full bg-[#f39c12] flex items-center justify-center text-white font-bold overflow-hidden shadow-inner text-xs">
+                <div className="w-8 h-8 rounded-full bg-[#f39c12] flex items-center justify-center text-white font-bold overflow-hidden shadow-inner text-xs relative">
                    {user.email?.[0].toUpperCase()}
+                   {isAdmin && (
+                     <div className="absolute bottom-0 right-0 bg-blue-500 rounded-full border border-white">
+                        <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                     </div>
+                   )}
                 </div>
                 <ChevronDown className="w-4 h-4 text-gray-400 group-hover:rotate-180 transition-transform" />
               </button>
               
-              {/* Dropdown Menu Container: Tạo cầu nối bằng pt-2 thay vì mt-2 */}
               <div className="absolute top-full right-0 w-64 invisible opacity-0 group-hover:visible group-hover:opacity-100 pt-2 transition-all duration-200 z-50">
                 <div className="bg-white shadow-2xl rounded-2xl border border-gray-100 overflow-hidden transform origin-top-right scale-95 group-hover:scale-100 transition-transform duration-200">
                   <div className="p-4 border-b border-gray-50 bg-gray-50/50">
-                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Tài khoản Admin</p>
+                     <div className="flex items-center gap-1.5 mb-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tài khoản {isAdmin ? 'Admin' : 'Thành viên'}</p>
+                        {isAdmin && <ShieldCheck className="w-3 h-3 text-blue-500" />}
+                     </div>
                      <p className="text-xs font-bold text-gray-700 truncate">{user.email}</p>
                   </div>
                   <div className="p-2">
-                    <button 
-                      onClick={onAdminClick}
-                      className="w-full text-left px-3 py-2.5 text-[13px] font-bold text-gray-600 hover:bg-orange-50 hover:text-[#f39c12] rounded-xl flex items-center gap-3 transition-colors"
-                    >
-                      <LayoutDashboard className="w-4 h-4" /> Quản lý bài viết
-                    </button>
+                    {isAdmin && (
+                      <button 
+                        onClick={onAdminClick}
+                        className="w-full text-left px-3 py-2.5 text-[13px] font-bold text-gray-600 hover:bg-orange-50 hover:text-[#f39c12] rounded-xl flex items-center gap-3 transition-colors"
+                      >
+                        <LayoutDashboard className="w-4 h-4" /> Quản lý bài viết
+                      </button>
+                    )}
                     <button className="w-full text-left px-3 py-2.5 text-[13px] font-bold text-gray-600 hover:bg-orange-50 hover:text-[#f39c12] rounded-xl flex items-center gap-3 transition-colors">
                       <User className="w-4 h-4" /> Trang cá nhân
                     </button>

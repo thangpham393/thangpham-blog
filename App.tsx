@@ -13,7 +13,7 @@ import Auth from './components/Auth';
 import { Post } from './types';
 import { MOCK_POSTS } from './mockData';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldAlert } from 'lucide-react';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Trang chủ');
@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   
   const isConfigValid = isSupabaseConfigured();
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -33,7 +34,7 @@ const App: React.FC = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) setShowAuthModal(false); // Đóng modal khi login thành công
+      if (session?.user) setShowAuthModal(false);
     });
 
     return () => subscription.unsubscribe();
@@ -131,7 +132,20 @@ const App: React.FC = () => {
               <PostDetail post={selectedPost} onBack={() => setSelectedPost(null)} />
             ) : activeTab === 'Quản lý' ? (
               user ? (
-                <AdminEditor onSuccess={handlePostSuccess} />
+                isAdmin ? (
+                  <AdminEditor onSuccess={handlePostSuccess} />
+                ) : (
+                  <div className="bg-white rounded-xl p-20 text-center border border-gray-100 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                      <ShieldAlert className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-xl font-black text-gray-800 uppercase mb-2">Truy cập bị từ chối</h2>
+                    <p className="text-gray-400 font-medium text-sm max-w-sm">
+                      Tài khoản của bạn không có quyền quản trị. Vui lòng liên hệ Admin để được cấp quyền.
+                    </p>
+                    <button onClick={() => handleTabChange('Trang chủ')} className="mt-6 bg-gray-100 text-gray-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-200">Quay lại trang chủ</button>
+                  </div>
+                )
               ) : (
                 <div className="bg-white rounded-xl p-20 text-center border border-gray-100">
                    <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Vui lòng đăng nhập để truy cập trang này</p>
