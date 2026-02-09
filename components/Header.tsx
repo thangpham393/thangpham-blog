@@ -47,7 +47,6 @@ const Header: React.FC<HeaderProps> = ({ onSearch, user, onLoginClick, onAdminCl
         {/* Action Icons */}
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-4 text-gray-400 mr-2">
-            {/* Fix: Moved 'title' prop from Grid icon to wrapping span to resolve TypeScript error */}
             <span title="Ứng dụng" className="cursor-pointer hover:text-[#f39c12]">
               <Grid className="w-5 h-5" />
             </span>
@@ -60,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, user, onLoginClick, onAdminCl
           <div className="h-8 w-px bg-gray-100 mx-2 hidden sm:block"></div>
 
           {user ? (
-            <div className="relative group">
+            <div className="relative group py-2"> {/* Thêm padding y để mở rộng vùng hover */}
               <button className="flex items-center gap-1 border border-gray-100 rounded-full p-0.5 pr-2 hover:bg-gray-50 transition-all">
                 <div className="w-8 h-8 rounded-full bg-[#f39c12] flex items-center justify-center text-white font-bold overflow-hidden shadow-inner text-xs">
                    {user.email?.[0].toUpperCase()}
@@ -68,33 +67,35 @@ const Header: React.FC<HeaderProps> = ({ onSearch, user, onLoginClick, onAdminCl
                 <ChevronDown className="w-4 h-4 text-gray-400 group-hover:rotate-180 transition-transform" />
               </button>
               
-              {/* Dropdown Menu */}
-              <div className="absolute top-full right-0 mt-2 w-56 bg-white shadow-2xl rounded-xl border border-gray-100 hidden group-hover:block overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-4 border-b border-gray-50 bg-gray-50/50">
-                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Tài khoản Admin</p>
-                   <p className="text-xs font-bold text-gray-700 truncate">{user.email}</p>
-                </div>
-                <div className="p-2">
-                  <button 
-                    onClick={onAdminClick}
-                    className="w-full text-left px-3 py-2 text-[13px] font-bold text-gray-600 hover:bg-gray-50 hover:text-[#f39c12] rounded-lg flex items-center gap-3 transition-colors"
-                  >
-                    <LayoutDashboard className="w-4 h-4" /> Quản lý bài viết
-                  </button>
-                  <button className="w-full text-left px-3 py-2 text-[13px] font-bold text-gray-600 hover:bg-gray-50 hover:text-[#f39c12] rounded-lg flex items-center gap-3 transition-colors">
-                    <User className="w-4 h-4" /> Trang cá nhân
-                  </button>
-                  <button className="w-full text-left px-3 py-2 text-[13px] font-bold text-gray-600 hover:bg-gray-50 hover:text-[#f39c12] rounded-lg flex items-center gap-3 transition-colors">
-                    <Settings className="w-4 h-4" /> Cài đặt chung
-                  </button>
-                </div>
-                <div className="p-2 border-t border-gray-50 bg-gray-50/30">
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full text-left px-3 py-2 text-[13px] font-black text-red-500 hover:bg-red-50 rounded-lg flex items-center gap-3 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" /> Đăng xuất
-                  </button>
+              {/* Dropdown Menu Container: Tạo cầu nối bằng pt-2 thay vì mt-2 */}
+              <div className="absolute top-full right-0 w-64 invisible opacity-0 group-hover:visible group-hover:opacity-100 pt-2 transition-all duration-200 z-50">
+                <div className="bg-white shadow-2xl rounded-2xl border border-gray-100 overflow-hidden transform origin-top-right scale-95 group-hover:scale-100 transition-transform duration-200">
+                  <div className="p-4 border-b border-gray-50 bg-gray-50/50">
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Tài khoản Admin</p>
+                     <p className="text-xs font-bold text-gray-700 truncate">{user.email}</p>
+                  </div>
+                  <div className="p-2">
+                    <button 
+                      onClick={onAdminClick}
+                      className="w-full text-left px-3 py-2.5 text-[13px] font-bold text-gray-600 hover:bg-orange-50 hover:text-[#f39c12] rounded-xl flex items-center gap-3 transition-colors"
+                    >
+                      <LayoutDashboard className="w-4 h-4" /> Quản lý bài viết
+                    </button>
+                    <button className="w-full text-left px-3 py-2.5 text-[13px] font-bold text-gray-600 hover:bg-orange-50 hover:text-[#f39c12] rounded-xl flex items-center gap-3 transition-colors">
+                      <User className="w-4 h-4" /> Trang cá nhân
+                    </button>
+                    <button className="w-full text-left px-3 py-2.5 text-[13px] font-bold text-gray-600 hover:bg-orange-50 hover:text-[#f39c12] rounded-xl flex items-center gap-3 transition-colors">
+                      <Settings className="w-4 h-4" /> Cài đặt chung
+                    </button>
+                  </div>
+                  <div className="p-2 border-t border-gray-50 bg-gray-50/30">
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full text-left px-3 py-2.5 text-[13px] font-black text-red-500 hover:bg-red-50 rounded-xl flex items-center gap-3 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" /> Đăng xuất
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
